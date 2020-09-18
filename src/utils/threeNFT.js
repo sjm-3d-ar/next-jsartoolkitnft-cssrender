@@ -192,6 +192,7 @@ function startTracking(
     scratchCanvasFrame.width = pw;
     scratchCanvasFrame.height = ph;
 
+    // TODO - see if this is setting size to 640 480
     renderer.setSize(sw, sh);
 
     worker = new Worker("libs/artoolkitNFT/artoolkitNFT.worker.js");
