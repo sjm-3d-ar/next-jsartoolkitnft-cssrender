@@ -1,19 +1,10 @@
 /* eslint-disable no-param-reassign */
-import * as THREE from "three";
-import { CSS3DRenderer, CSS3DObject } from "./CSS3DRenderer";
 
 /**
  * NOTE: this file is derived from `threejs_worker.js`
  * https://github.com/webarkit/jsartoolkitNFT/tree/master/examples
  *
  */
-
-const VIDEO_WIDTH_16 = 16;
-const VIDEO_HEIGHT_9 = 9;
-
-function isMobile() {
-  return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
-}
 
 // NOTE: the original value of this was 24, which was very smooth, but slower to track
 const interpolationFactor = 4;
@@ -24,54 +15,45 @@ const trackedMatrix = {
   interpolated: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 };
 
-const setMatrix = (matrix, valuesObj) => {
+const setMatrix = matrixObj => {
   const array = [];
 
-  // convert the incoming object literal 'valuesObj', to an array
-  Object.keys(valuesObj).forEach(key => {
-    array[key] = valuesObj[key];
+  // convert the incoming object literal 'matrixObj', to an array
+  Object.keys(matrixObj).forEach(key => {
+    array[key] = matrixObj[key];
   });
 
-  console.log("matrix array:", array);
+  // console.log("matrix array:", array.join(", "));
 
-  if (typeof matrix.elements.set === "function") {
-    matrix.elements.set(array);
-  } else {
-    matrix.elements = [].slice.call(array);
-  }
+  // TODO assign matrix array to HTML element matrix3d()
+  const el = document.querySelector("#trackingHTML");
+  el.style.transform = `translateZ(400px) matrix3d(${array.join(", ")})`;
 };
 
-const setupScene = (renderer, scene, camera, root, campaignVideoEl, cameraCanvasEl) => {
+const setupScene = displayEl => {
   console.log("window.innerHeight:", window.innerHeight);
   console.log("window.innerWidth:", window.innerWidth);
 
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  cameraCanvasEl.appendChild(renderer.domElement);
-
-  camera.matrixAutoUpdate = false;
-  scene.add(camera);
-
-  scene.add(root);
-  root.matrixAutoUpdate = false;
-
   const div = document.createElement("div");
+  div.id = "trackingHTML";
   div.style.width = "927px";
-  div.style.height = "486px";
+  div.style.height = "586px";
   div.style.backgroundColor = "green";
   div.style.border = "solid red 5px";
-  div.style.visibility = "hidden";
+  // div.style.visibility = "hidden";
 
   const button = document.createElement("button");
   button.style.width = "180px";
   button.style.height = "60px";
   button.style.backgroundColor = "yellow";
+  button.style.display = "block";
   button.textContent = "Click me.";
   button.addEventListener("click", () => alert("clicked!"));
   div.appendChild(button);
 
   const video = document.createElement("video");
-  video.style.width = "100%";
-  video.style.height = "100%";
+  video.style.width = "80%";
+  video.style.height = "80%";
   video.autoplay = true;
   video.loop = true;
   video.crossOrigin = "anonymous";
@@ -79,35 +61,12 @@ const setupScene = (renderer, scene, camera, root, campaignVideoEl, cameraCanvas
   video.controls = true;
   div.appendChild(video);
 
-  const object = new CSS3DObject(div);
-  object.name = "videoPlane";
-  // object.position.set(x, y, z);
-
-  root.visible = false;
-  root.add(object);
+  displayEl.appendChild(div);
 };
 
-function setObjectPositionAndScale(scene, imageData) {
+function setObjectPositionAndScale(imageData) {
   console.log("imageData.height:", imageData.height);
   console.log("imageData.width:", imageData.width);
-
-  const videoPlane = scene.getObjectByName("videoPlane");
-  console.log("videoPlane.element:", videoPlane.element);
-
-  videoPlane.element.style.height = imageData.height;
-  videoPlane.element.style.width = imageData.width;
-
-  // const imageHeightMM = (imageData.height / imageData.dpi) * 2.54 * 10;
-  // const imageWidthMM = (imageData.width / imageData.dpi) * 2.54 * 10;
-
-  // const videoScale = Math.floor(imageWidthMM / videoPlane.geometry.parameters.width);
-  // const videoScale = Math.floor(imageWidthMM / videoPlane.geometry.parameters.width);
-
-  // videoPlane.position.y = imageHeightMM / 2.0;
-  // videoPlane.position.x = imageWidthMM / 2.0;
-
-  // // videoPlane.scale.set(videoScale, videoScale, 1);
-  // videoPlane.visible = true;
 }
 
 let isFound = false;
@@ -115,16 +74,13 @@ let isFound = false;
 function startTracking(
   nftDescriptorsName,
   cameraVideoEl,
-  cameraCanvasEl,
+  displayEl,
   campaignVideoEl,
   handleLoadingEnded,
 ) {
   let vw;
   let vh;
-  let sw;
-  let sh;
   let pScale;
-  let sScale;
   let w;
   let h;
   let pw;
@@ -139,12 +95,7 @@ function startTracking(
   const scratchCanvasFrame = document.createElement("canvas");
   const scratchContextFrame = scratchCanvasFrame.getContext("2d");
 
-  const renderer = new CSS3DRenderer({});
-  const scene = new THREE.Scene();
-  const camera = new THREE.Camera();
-  const root = new THREE.Object3D();
-
-  setupScene(renderer, scene, camera, root, campaignVideoEl, cameraCanvasEl);
+  setupScene(displayEl);
 
   function found(msg) {
     world = msg ? JSON.parse(msg.matrixGL_RH) : null;
@@ -157,6 +108,23 @@ function startTracking(
   const pauseVideo = () => {
     campaignVideoEl.pause();
   };
+
+  function draw() {
+    if (!world) {
+      // videoPlane.element.style.visibility = "hidden";
+    } else {
+      // videoPlane.element.style.visibility = "visible";
+
+      // interpolate matrix
+      for (let i = 0; i < 16; i += 1) {
+        trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
+        trackedMatrix.interpolated[i] += trackedMatrix.delta[i] / interpolationFactor;
+      }
+
+      // set matrix of 'root' by detected 'world' matrix
+      setMatrix(trackedMatrix.interpolated);
+    }
+  }
 
   function process() {
     // copy the camera frame to the scratch context
@@ -176,10 +144,6 @@ function startTracking(
     vh = cameraVideoEl.videoHeight;
 
     pScale = 320 / Math.max(vw, (vh / 3) * 4);
-    sScale = isMobile() ? window.outerWidth / cameraVideoEl.videoWidth : 1;
-
-    sw = vw * sScale;
-    sh = vh * sScale;
 
     w = vw * pScale;
     h = vh * pScale;
@@ -191,8 +155,6 @@ function startTracking(
     scratchCanvasFrame.style.clientHeight = `${ph}px`;
     scratchCanvasFrame.width = pw;
     scratchCanvasFrame.height = ph;
-
-    renderer.setSize(sw, sh);
 
     worker = new Worker("libs/artoolkitNFT/artoolkitNFT.worker.js");
 
@@ -219,7 +181,7 @@ function startTracking(
           proj[5] *= ratioH;
           proj[9] *= ratioH;
           proj[13] *= ratioH;
-          setMatrix(camera.projectionMatrix, proj);
+          setMatrix(proj);
           break;
         }
 
@@ -237,7 +199,7 @@ function startTracking(
             width: nft.width,
             height: nft.height,
           };
-          setObjectPositionAndScale(scene, imageData);
+          setObjectPositionAndScale(imageData);
           break;
         }
 
@@ -246,6 +208,7 @@ function startTracking(
             playVideo();
             isFound = true;
           }
+          draw();
 
           found(msg);
           break;
@@ -269,35 +232,7 @@ function startTracking(
     };
   }
 
-  function draw() {
-    const videoPlane = scene.getObjectByName("videoPlane");
-
-    if (!world) {
-      root.visible = false;
-      videoPlane.element.style.visibility = "hidden";
-    } else {
-      root.visible = true;
-      videoPlane.element.style.visibility = "visible";
-
-      // interpolate matrix
-      for (let i = 0; i < 16; i += 1) {
-        trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
-        trackedMatrix.interpolated[i] += trackedMatrix.delta[i] / interpolationFactor;
-      }
-
-      // set matrix of 'root' by detected 'world' matrix
-      setMatrix(root.matrix, trackedMatrix.interpolated);
-    }
-    renderer.render(scene, camera);
-  }
-
-  function tick() {
-    draw();
-    requestAnimationFrame(tick);
-  }
-
   load();
-  tick();
   process();
 }
 
