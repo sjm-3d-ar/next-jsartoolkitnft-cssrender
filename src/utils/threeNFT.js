@@ -1,6 +1,6 @@
 /* eslint-disable no-param-reassign */
 import * as THREE from "three";
-import { CSS3DRenderer, CSS3DObject } from "./CSS3DRenderer.js";
+import { CSS3DRenderer, CSS3DObject } from "./CSS3DRenderer";
 
 /**
  * NOTE: this file is derived from `threejs_worker.js`
@@ -32,6 +32,8 @@ const setMatrix = (matrix, valuesObj) => {
     array[key] = valuesObj[key];
   });
 
+  console.log("matrix array:", array);
+
   if (typeof matrix.elements.set === "function") {
     matrix.elements.set(array);
   } else {
@@ -40,6 +42,9 @@ const setMatrix = (matrix, valuesObj) => {
 };
 
 const setupScene = (renderer, scene, camera, root, campaignVideoEl, cameraCanvasEl) => {
+  console.log("window.innerHeight:", window.innerHeight);
+  console.log("window.innerWidth:", window.innerWidth);
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   cameraCanvasEl.appendChild(renderer.domElement);
 
@@ -50,8 +55,8 @@ const setupScene = (renderer, scene, camera, root, campaignVideoEl, cameraCanvas
   root.matrixAutoUpdate = false;
 
   const div = document.createElement("div");
-  div.style.width = "480px";
-  div.style.height = "360px";
+  div.style.width = "927px";
+  div.style.height = "486px";
   div.style.backgroundColor = "green";
   div.style.border = "solid red 5px";
   div.style.visibility = "hidden";
@@ -64,6 +69,16 @@ const setupScene = (renderer, scene, camera, root, campaignVideoEl, cameraCanvas
   button.addEventListener("click", () => alert("clicked!"));
   div.appendChild(button);
 
+  const video = document.createElement("video");
+  video.style.width = "100%";
+  video.style.height = "100%";
+  video.autoplay = true;
+  video.loop = true;
+  video.crossOrigin = "anonymous";
+  video.src = "https://avo-content-dev.s3.amazonaws.com/videos/bg_1588085276090.mp4";
+  video.controls = true;
+  div.appendChild(video);
+
   const object = new CSS3DObject(div);
   object.name = "videoPlane";
   // object.position.set(x, y, z);
@@ -73,21 +88,26 @@ const setupScene = (renderer, scene, camera, root, campaignVideoEl, cameraCanvas
 };
 
 function setObjectPositionAndScale(scene, imageData) {
-  return;
+  console.log("imageData.height:", imageData.height);
+  console.log("imageData.width:", imageData.width);
 
   const videoPlane = scene.getObjectByName("videoPlane");
+  console.log("videoPlane.element:", videoPlane.element);
 
-  const imageHeightMM = (imageData.height / imageData.dpi) * 2.54 * 10;
-  const imageWidthMM = (imageData.width / imageData.dpi) * 2.54 * 10;
+  videoPlane.element.style.height = imageData.height;
+  videoPlane.element.style.width = imageData.width;
+
+  // const imageHeightMM = (imageData.height / imageData.dpi) * 2.54 * 10;
+  // const imageWidthMM = (imageData.width / imageData.dpi) * 2.54 * 10;
 
   // const videoScale = Math.floor(imageWidthMM / videoPlane.geometry.parameters.width);
   // const videoScale = Math.floor(imageWidthMM / videoPlane.geometry.parameters.width);
 
-  videoPlane.position.y = imageHeightMM / 2.0;
-  videoPlane.position.x = imageWidthMM / 2.0;
+  // videoPlane.position.y = imageHeightMM / 2.0;
+  // videoPlane.position.x = imageWidthMM / 2.0;
 
-  // videoPlane.scale.set(videoScale, videoScale, 1);
-  videoPlane.visible = true;
+  // // videoPlane.scale.set(videoScale, videoScale, 1);
+  // videoPlane.visible = true;
 }
 
 let isFound = false;
