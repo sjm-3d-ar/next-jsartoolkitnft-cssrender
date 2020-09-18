@@ -68,6 +68,6 @@ export default css`
     display: block;
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover;
+    perspective: 3000px;
   }
 `;

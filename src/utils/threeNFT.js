@@ -27,7 +27,9 @@ const setMatrix = matrixObj => {
 
   // TODO assign matrix array to HTML element matrix3d()
   const el = document.querySelector("#trackingHTML");
-  el.style.transform = `translateZ(400px) matrix3d(${array.join(", ")})`;
+
+  // NOTE: need to have parent set 'perspective' I think for translateZ to have an effect
+  el.style.transform = `translateZ(-400px) matrix3d(${array.join(", ")})`;
 };
 
 const setupScene = displayEl => {
